@@ -1,7 +1,7 @@
 import asyncio
 import json
-
 import discord
+
 from babel import languages
 from google.cloud import translate
 
@@ -32,11 +32,9 @@ def translate_text(text: str, target_language_code: str):
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
-
 @client.event
 async def on_ready():
     print(f"We have logged in as {client.user}")
-
 
 @client.event
 async def on_raw_reaction_add(payload):
@@ -52,10 +50,7 @@ async def on_raw_reaction_add(payload):
         return
     countrycode = unicodestring[-2:]
     language = languages.get_official_languages(countrycode)[0]
-    loop = asyncio.get_running_loop()
-    translation = await loop.run_in_executor(
-        None, translate_text, message.content, language
-    )
+    translation = translate_text(message.content, language)
     source_lang = translation.detected_language_code
     translated_text = translation.translated_text
 
