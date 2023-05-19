@@ -50,7 +50,8 @@ async def on_raw_reaction_add(payload):
         return
     countrycode = unicodestring[-2:]
     language = languages.get_official_languages(countrycode)[0]
-    translation = translate_text(message.content, language)
+    loop = asyncio.get_running_loop()
+    translation = await loop.run_in_executor(None, translate_text, message.content, language)
     source_lang = translation.detected_language_code
     translated_text = translation.translated_text
 
