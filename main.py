@@ -1,41 +1,35 @@
+import asyncio
 import json
 
 import discord
 from babel import languages
-from discord import Embed
 from google.cloud import translate
 
-f = open("environment.json")
-environ = json.load(f)
-f.close()
+with open("environment.json") as f:
+    environ = json.load(f)
 
 PROJECT_ID = environ.get("project_id", "")
 assert PROJECT_ID
 PARENT = f"projects/{PROJECT_ID}"
 
-f = open("token.json")
-tokenjson = json.load(f)
-f.close()
+with open("token.json") as f:
+    tokenjson = json.load(f)
+
 token = tokenjson.get("token")
 
-f = open("unicode.json")
-unicode = json.load(f)
-f.close()
+with open("unicode.json") as f:
+    unicode = json.load(f)
 
 
 def translate_text(text: str, target_language_code: str):
     client = translate.TranslationServiceClient()
-
     response = client.translate_text(
         parent=PARENT, contents=[text], target_language_code=target_language_code
     )
-
     return response.translations[0]
 
 
 intents = discord.Intents.all()
-intents.message_content = True
-
 client = discord.Client(intents=intents)
 
 
@@ -58,12 +52,16 @@ async def on_raw_reaction_add(payload):
         return
     countrycode = unicodestring[-2:]
     language = languages.get_official_languages(countrycode)[0]
-    translation = translate_text(message.content, language)
+    loop = asyncio.get_running_loop()
+    translation = await loop.run_in_executor(
+        None, translate_text, message.content, language
+    )
     source_lang = translation.detected_language_code
     translated_text = translation.translated_text
 
-    result = Embed()
+    result = discord.Embed()
     result.title = f"{source_lang.upper()} → {language.upper()}"
+    result.set_author(name=payload.member,icon_url=payload.member.avatar)
     result.description = translated_text
     result.colour = 16752360
     result.set_footer(
